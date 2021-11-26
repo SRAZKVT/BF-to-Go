@@ -26,10 +26,11 @@ func main() {
 	}
 
 	scanner := bufio.NewScanner(finput)
-	var line [] byte
+	var line []byte
 	var character byte
 	indent := 1
 
+	amtLoopsNotClosed := 0
 	isFmtUsed := false
 	isMemUsed := false
 	isPtrUsed := false
@@ -44,6 +45,11 @@ func main() {
 			case '[', '+', '-':
 				isMemUsed = true
 				isPtrUsed = true
+				if character == '[' {
+					amtLoopsNotClosed++
+				}
+			case ']':
+				amtLoopsNotClosed--
 			case '.', ',':
 				isPtrUsed = true
 				isMemUsed = true
@@ -51,7 +57,18 @@ func main() {
 			}
 		}
 	}
-	finput.Close()
+	err = finput.Close()
+	if err != nil {
+		return
+	}
+
+	if amtLoopsNotClosed > 0 {
+		fmt.Println("Non closed loop somewhere")
+		return
+	} else if amtLoopsNotClosed < 0 {
+		fmt.Println("You close a loop too much somewhere")
+		return
+	}
 
 	finput, err = os.Open(fileInput)
 	if err != nil {
@@ -72,7 +89,6 @@ func main() {
 	if isPtrUsed {
 		w.WriteString("var ptr uint16 = 0\n")
 	}
-
 
 	for scanner.Scan() {
 		line = scanner.Bytes()
